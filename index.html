@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhoneDB — Database Nomor</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --primary: #4f46e5; --primary-dark: #3730a3; --primary-light: #eef2ff;
+  --danger: #ef4444; --danger-light: #fef2f2;
+  --success: #10b981; --success-light: #ecfdf5;
+  --warning: #f59e0b; --warning-light: #fffbeb;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+  --gray-400:#9ca3af;--gray-500:#6b7280;--gray-600:#4b5563;
+  --gray-700:#374151;--gray-800:#1f2937;--gray-900:#111827;
+  --shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --shadow-lg:0 10px 15px rgba(0,0,0,.1),0 4px 6px rgba(0,0,0,.05);
+  --shadow-xl:0 20px 25px rgba(0,0,0,.1),0 10px 10px rgba(0,0,0,.04);
+  --radius:10px; --radius-lg:14px;
+}
+body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--gray-100); color:var(--gray-800); min-height:100vh; }
+.page { display:none; }
+.page.active { display:flex; }
+#loginPage { min-height:100vh; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); align-items:center; justify-content:center; padding:20px; }
+.login-card { background:#fff; border-radius:20px; box-shadow:var(--shadow-xl); padding:48px 40px; width:100%; max-width:420px; animation:slideUp .4s ease; }
+@keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+.login-logo { display:flex; align-items:center; gap:12px; margin-bottom:32px; justify-content:center; }
+.login-logo .icon { width:48px; height:48px; background:linear-gradient(135deg,#4f46e5,#764ba2); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.login-logo h1 { font-size:26px; font-weight:800; color:var(--gray-900); }
+.login-logo span { color:var(--primary); }
+.login-card h2 { font-size:20px; font-weight:700; color:var(--gray-900); margin-bottom:4px; text-align:center; }
+.login-card p { font-size:14px; color:var(--gray-500); text-align:center; margin-bottom:28px; }
+.form-group { margin-bottom:18px; }
+.form-group label { display:block; font-size:13px; font-weight:600; color:var(--gray-700); margin-bottom:6px; }
+.input-wrap { position:relative; }
+.input-wrap .input-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--gray-400); pointer-events:none; }
+.input-wrap input { width:100%; padding:12px 14px 12px 42px; border:1.5px solid var(--gray-200); border-radius:var(--radius); font-size:14px; color:var(--gray-800); background:var(--gray-50); transition:all .2s; outline:none; }
+.input-wrap input:focus { border-color:var(--primary); background:#fff; box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+.demo-accounts { background:var(--gray-50); border:1px solid var(--gray-200); border-radius:var(--radius); padding:14px; margin-bottom:20px; font-size:12.5px; }
+.demo-accounts p { font-weight:600; color:var(--gray-600); margin-bottom:8px; }
+.demo-item { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--gray-200); }
+.demo-item:last-child { border-bottom:none; }
+.demo-item .role { font-weight:700; }
+.role.admin{color:var(--primary)} .role.user{color:var(--success)} .role.viewer{color:var(--warning)}
+.demo-item span { color:var(--gray-500); font-family:monospace; font-size:12px; }
+.btn { display:inline-flex; align-items:center; gap:7px; padding:11px 20px; border:none; border-radius:var(--radius); font-size:14px; font-weight:600; cursor:pointer; transition:all .2s; text-decoration:none; white-space:nowrap; }
+.btn:active{transform:scale(.97)}
+.btn-primary { background:linear-gradient(135deg,#4f46e5,#6d28d9); color:#fff; width:100%; justify-content:center; padding:13px; box-shadow:0 4px 14px rgba(79,70,229,.4); }
+.btn-primary:hover { box-shadow:0 6px 20px rgba(79,70,229,.5); transform:translateY(-1px); }
+.btn-success{background:var(--success);color:#fff} .btn-success:hover{background:#059669}
+.btn-danger{background:var(--danger);color:#fff} .btn-danger:hover{background:#dc2626}
+.btn-secondary{background:var(--gray-200);color:var(--gray-700)} .btn-secondary:hover{background:var(--gray-300)}
+.btn-sm{padding:7px 14px;font-size:13px}
+.btn-xs{padding:5px 10px;font-size:12px;border-radius:7px}
+.error-msg { background:var(--danger-light); color:var(--danger); border:1px solid #fecaca; border-radius:var(--radius); padding:10px 14px; font-size:13px; margin-bottom:16px; display:none; }
+#appPage { flex-direction:column; min-height:100vh; }
+.topbar { background:#fff; border-bottom:1px solid var(--gray-200); padding:0 24px; height:60px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; box-shadow:0 1px 2px rgba(0,0,0,.06); }
+.topbar-left { display:flex; align-items:center; gap:14px; }
+.topbar-logo { display:flex; align-items:center; gap:8px; font-size:18px; font-weight:800; color:var(--gray-900); }
+.topbar-logo .icon { width:34px; height:34px; background:linear-gradient(135deg,#4f46e5,#764ba2); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.nav-tabs { display:flex; gap:4px; margin-left:8px; }
+.nav-tab { padding:7px 16px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; color:var(--gray-500); background:none; border:none; transition:all .2s; display:flex; align-items:center; gap:6px; }
+.nav-tab:hover{background:var(--gray-100);color:var(--gray-700)}
+.nav-tab.active{background:var(--primary-light);color:var(--primary)}
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.user-info { display:flex; align-items:center; gap:10px; padding:6px 14px; background:var(--gray-50); border:1px solid var(--gray-200); border-radius:10px; }
+.user-avatar { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; }
+.avatar-admin{background:linear-gradient(135deg,#4f46e5,#764ba2)}
+.avatar-user{background:linear-gradient(135deg,#10b981,#059669)}
+.avatar-viewer{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.user-info .name{font-size:13.5px;font-weight:700;color:var(--gray-800)}
+.user-info .role-badge{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+.badge-admin{background:#eef2ff;color:var(--primary)}
+.badge-user{background:var(--success-light);color:var(--success)}
+.badge-viewer{background:var(--warning-light);color:var(--warning)}
+.app-content { flex:1; padding:24px; max-width:1400px; margin:0 auto; width:100%; }
+.panel { display:none; }
+.panel.active { display:block; animation:fadeIn .3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+.stat-card { background:#fff; border-radius:var(--radius-lg); padding:20px; box-shadow:var(--shadow); border:1px solid var(--gray-200); display:flex; align-items:center; gap:14px; }
+.stat-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.stat-icon.purple{background:#eef2ff} .stat-icon.green{background:var(--success-light)} .stat-icon.blue{background:#eff6ff} .stat-icon.orange{background:var(--warning-light)}
+.stat-info h3{font-size:26px;font-weight:800;color:var(--gray-900)}
+.stat-info p{font-size:13px;color:var(--gray-500);font-weight:500}
+.section-card { background:#fff; border-radius:var(--radius-lg); box-shadow:var(--shadow); border:1px solid var(--gray-200); overflow:hidden; margin-bottom:20px; }
+.section-header { padding:18px 20px; border-bottom:1px solid var(--gray-100); display:flex; align-items:center; justify-content:space-between; background:var(--gray-50); flex-wrap:wrap; gap:10px; }
+.section-title { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:700; color:var(--gray-800); }
+.section-title .s-icon { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:17px; }
+.add-number-form { background:linear-gradient(135deg,#eef2ff 0%,#f5f3ff 100%); border:1.5px dashed #c7d2fe; border-radius:var(--radius-lg); padding:24px; margin-bottom:20px; }
+.add-number-form h3 { font-size:16px; font-weight:700; color:var(--primary); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:12px; align-items:end; }
+.form-row .form-group{margin-bottom:0}
+.form-row input,.form-row select { width:100%; padding:11px 14px; border:1.5px solid var(--gray-200); border-radius:var(--radius); font-size:14px; background:#fff; outline:none; transition:all .2s; color:var(--gray-800); }
+.form-row input:focus,.form-row select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.form-row label{font-size:12px;font-weight:600;color:var(--gray-600);display:block;margin-bottom:5px}
+.table-wrap { overflow-y:auto; max-height:440px; }
+.table-wrap::-webkit-scrollbar{width:6px;height:6px}
+.table-wrap::-webkit-scrollbar-track{background:transparent}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px}
+.table-wrap::-webkit-scrollbar-thumb:hover{background:var(--gray-400)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+thead{position:sticky;top:0;z-index:2;background:var(--gray-800)}
+thead th{padding:13px 16px;text-align:left;font-size:12px;font-weight:700;letter-spacing:.5px;color:#fff;white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--gray-100);transition:background .15s}
+tbody tr:hover{background:var(--gray-50)}
+tbody tr:last-child{border-bottom:none}
+tbody td{padding:12px 16px;vertical-align:middle;color:var(--gray-700)}
+.no-data{text-align:center;padding:48px 20px;color:var(--gray-400)}
+.no-data .nd-icon{font-size:40px;margin-bottom:10px}
+.no-data p{font-size:14px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.badge-active{background:var(--success-light);color:var(--success)}
+.badge-inactive{background:var(--gray-100);color:var(--gray-500)}
+.badge-work{background:#eff6ff;color:#2563eb}
+.badge-personal{background:#fdf4ff;color:#7c3aed}
+.badge-other{background:var(--warning-light);color:var(--warning)}
+.search-bar{position:relative;flex:1;max-width:280px}
+.search-bar input{width:100%;padding:9px 14px 9px 36px;border:1.5px solid var(--gray-200);border-radius:9px;font-size:14px;background:#fff;outline:none;transition:all .2s;color:var(--gray-700)}
+.search-bar input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.search-bar .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--gray-400);pointer-events:none}
+.user-item{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--gray-100);transition:background .15s}
+.user-item:hover{background:var(--gray-50)}
+.user-item:last-child{border-bottom:none}
+.user-item .ua{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0}
+.user-item .ui-info{flex:1}
+.user-item .ui-info .uname{font-size:14.5px;font-weight:700;color:var(--gray-800)}
+.user-item .ui-info .umeta{font-size:12.5px;color:var(--gray-500);margin-top:2px}
+.user-item .ui-actions{display:flex;gap:6px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:18px;box-shadow:var(--shadow-xl);width:100%;max-width:500px;animation:modalIn .3s ease;overflow:hidden}
+@keyframes modalIn{from{transform:scale(.9) translateY(-20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;background:var(--gray-50)}
+.modal-header h3{font-size:16px;font-weight:700;color:var(--gray-800);display:flex;align-items:center;gap:8px}
+.modal-close{width:32px;height:32px;border-radius:8px;border:none;background:var(--gray-200);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--gray-600);transition:all .2s}
+.modal-close:hover{background:var(--gray-300)}
+.modal-body{padding:24px}
+.modal-body .form-group{margin-bottom:16px}
+.modal-body .form-group label{display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px}
+.modal-body .form-group input,.modal-body .form-group select{width:100%;padding:11px 14px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:14px;background:var(--gray-50);outline:none;transition:all .2s;color:var(--gray-800)}
+.modal-body .form-group input:focus,.modal-body .form-group select:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--gray-100);display:flex;gap:10px;justify-content:flex-end;background:var(--gray-50)}
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:10px}
+.toast{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:12px;box-shadow:var(--shadow-lg);min-width:260px;font-size:14px;font-weight:500;animation:toastIn .35s ease}
+@keyframes toastIn{from{transform:translateX(80px);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.success{background:var(--success);color:#fff}
+.toast.error{background:var(--danger);color:#fff}
+.toast.info{background:var(--primary);color:#fff}
+.confirm-dialog{background:#fff;border-radius:18px;box-shadow:var(--shadow-xl);width:100%;max-width:380px;padding:28px;text-align:center;animation:modalIn .3s ease}
+.confirm-dialog .cd-icon{font-size:48px;margin-bottom:14px}
+.confirm-dialog h3{font-size:18px;font-weight:700;margin-bottom:8px;color:var(--gray-900)}
+.confirm-dialog p{font-size:14px;color:var(--gray-500);margin-bottom:24px}
+.confirm-dialog .cd-btns{display:flex;gap:10px;justify-content:center}
+.phone-num{font-family:'Courier New',monospace;font-size:14.5px;font-weight:700;color:var(--gray-800);letter-spacing:.5px}
+.welcome-banner{background:linear-gradient(135deg,#4f46e5 0%,#764ba2 100%);border-radius:var(--radius-lg);padding:24px 28px;margin-bottom:24px;color:#fff;display:flex;align-items:center;justify-content:space-between}
+.wb-left h2{font-size:20px;font-weight:800;margin-bottom:4px}
+.wb-left p{font-size:14px;opacity:.8}
+.wb-right{font-size:48px;opacity:.5}
+.users-scroll{max-height:480px;overflow-y:auto}
+.users-scroll::-webkit-scrollbar{width:6px}
+.users-scroll::-webkit-scrollbar-track{background:transparent}
+.users-scroll::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px}
+@media(max-width:768px){
+  .form-row{grid-template-columns:1fr 1fr}
+  .form-row>*:last-child{grid-column:span 2}
+  .topbar{padding:0 14px}
+  .app-content{padding:14px}
+  .nav-tabs{display:none}
+  .welcome-banner{flex-direction:column;gap:10px}
+  .wb-right{display:none}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .user-info .name{display:none}
+  thead th:nth-child(6),tbody td:nth-child(6),thead th:nth-child(7),tbody td:nth-child(7){display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage" class="page active">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon">📱</div>
+      <h1>Phone<span>DB</span></h1>
+    </div>
+    <h2>Selamat Datang 👋</h2>
+    <p>Login untuk mengelola database nomor telepon</p>
+    <div id="loginError" class="error-msg">❌ Username atau password salah!</div>
+    <div class="form-group">
+      <label>Username</label>
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input type="text" id="loginUsername" placeholder="Masukkan username..." autocomplete="off">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="loginPassword" placeholder="Masukkan password...">
+      </div>
+    </div>
+    <div class="demo-accounts">
+      <p>🔑 Akun Demo — klik untuk isi otomatis:</p>
+      <div class="demo-item" onclick="fillLogin('admin','admin123')" style="cursor:pointer;border-radius:7px;padding:7px 8px;margin:2px 0" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+        <span class="role admin">🛡️ ADMIN</span>
+        <span>admin / admin123</span>
+      </div>
+      <div class="demo-item" onclick="fillLogin('budi','budi123')" style="cursor:pointer;border-radius:7px;padding:7px 8px;margin:2px 0" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+        <span class="role user">👤 USER</span>
+        <span>budi / budi123</span>
+      </div>
+      <div class="demo-item" onclick="fillLogin('sari','sari123')" style="cursor:pointer;border-radius:7px;padding:7px 8px;margin:2px 0" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+        <span class="role user">👤 USER</span>
+        <span>sari / sari123</span>
+      </div>
+      <div class="demo-item" onclick="fillLogin('tamu','tamu123')" style="cursor:pointer;border-radius:7px;padding:7px 8px;margin:2px 0;border-bottom:none" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+        <span class="role viewer">👁️ VIEWER</span>
+        <span>tamu / tamu123</span>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">🚀 Masuk Sekarang</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appPage" class="page">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <div class="icon">📱</div>
+        PhoneDB
+      </div>
+      <div class="nav-tabs" id="navTabs"></div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-info">
+        <div id="topbarAvatar" class="user-avatar"></div>
+        <div>
+          <div id="topbarName" class="name"></div>
+          <span id="topbarBadge" class="role-badge"></span>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">🚪 Keluar</button>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <!-- DASHBOARD -->
+    <div id="panelDashboard" class="panel">
+      <div class="welcome-banner">
+        <div class="wb-left">
+          <h2 id="welcomeText">Halo! 👋</h2>
+          <p id="welcomeSub">Kelola database nomor dengan mudah.</p>
+        </div>
+        <div class="wb-right">📊</div>
+      </div>
+      <div class="stats-grid" id="statsGrid"></div>
+      <div id="quickAddSection"></div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <div class="s-icon" style="background:#eef2ff">📋</div>
+            <span id="recentTitle">Nomor Terbaru</span>
+          </div>
+          <div class="search-bar">
+            <span class="si">🔍</span>
+            <input type="text" id="dashSearch" placeholder="Cari nomor/nama..." oninput="renderDashNumbers()">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Nama</th><th>Nomor</th><th>Kategori</th>
+                <th>Status</th><th>Tanggal</th><th id="actColDash">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="dashNumberTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- NUMBERS -->
+    <div id="panelNumbers" class="panel">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <div class="s-icon" style="background:#eef2ff">📞</div>
+            Semua Nomor
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <div class="search-bar">
+              <span class="si">🔍</span>
+              <input type="text" id="numSearch" placeholder="Cari nomor/nama..." oninput="renderNumbersPanel()">
+            </div>
+            <button id="addNumBtnPanel" class="btn btn-success btn-sm" onclick="openAddModal()">➕ Tambah Nomor</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="max-height:580px">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Nama</th><th>Nomor</th><th>Kategori</th>
+                <th>Status</th><th>Pemilik</th><th>Tanggal</th><th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="numberTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS (admin only) -->
+    <div id="panelUsers" class="panel">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <div class="s-icon" style="background:#f0fdf4">👥</div>
+            Manajemen User
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <div class="search-bar">
+              <span class="si">🔍</span>
+              <input type="text" id="userSearch" placeholder="Cari user..." oninput="renderUsers()">
+            </div>
+            <button class="btn btn-success btn-sm" onclick="openAddUserModal()">➕ Tambah User</button>
+          </div>
+        </div>
+        <div class="users-scroll" id="userList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD/EDIT NUMBER -->
+<div class="modal-overlay" id="addNumModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="addNumModalTitle">➕ Tambah Nomor Baru</h3>
+      <button class="modal-close" onclick="closeModal('addNumModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editNumId">
+      <div class="form-group">
+        <label>Nama Kontak <span style="color:red">*</span></label>
+        <input type="text" id="formName" placeholder="Contoh: Budi Santoso">
+      </div>
+      <div class="form-group">
+        <label>Nomor Telepon <span style="color:red">*</span></label>
+        <input type="tel" id="formPhone" placeholder="Contoh: 0812-3456-7890">
+      </div>
+      <div class="form-group">
+        <label>Kategori</label>
+        <select id="formCategory">
+          <option value="personal">👤 Personal</option>
+          <option value="work">💼 Pekerjaan</option>
+          <option value="other">📌 Lainnya</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="formStatus">
+          <option value="active">✅ Aktif</option>
+          <option value="inactive">⭕ Tidak Aktif</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Catatan (opsional)</label>
+        <input type="text" id="formNote" placeholder="Catatan tambahan...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addNumModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveNumber()" style="width:auto;padding:11px 24px">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD USER -->
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>👤 Tambah User Baru</h3>
+      <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nama Lengkap <span style="color:red">*</span></label>
+        <input type="text" id="newUserFullname" placeholder="Nama lengkap...">
+      </div>
+      <div class="form-group">
+        <label>Username <span style="color:red">*</span></label>
+        <input type="text" id="newUserUsername" placeholder="Username (tanpa spasi)...">
+      </div>
+      <div class="form-group">
+        <label>Password <span style="color:red">*</span></label>
+        <input type="password" id="newUserPassword" placeholder="Password minimal 4 karakter...">
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select id="newUserRole">
+          <option value="user">👤 User — dapat tambah & hapus nomor sendiri</option>
+          <option value="viewer">👁️ Viewer — hanya dapat melihat</option>
+          <option value="admin">🛡️ Admin — akses penuh</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addUserModal')">Batal</button>
+      <button class="btn btn-success" onclick="saveUser()" style="width:auto;padding:11px 24px">✅ Tambah User</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="confirm-dialog">
+    <div class="cd-icon" id="confirmIcon">⚠️</div>
+    <h3 id="confirmTitle">Konfirmasi</h3>
+    <p id="confirmMsg">Yakin ingin melanjutkan?</p>
+    <div class="cd-btns">
+      <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Batal</button>
+      <button class="btn btn-danger" id="confirmOkBtn">🗑️ Ya, Hapus!</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const db = {
+  users: [
+    {id:1,username:'admin',password:'admin123',fullname:'Administrator',role:'admin',createdAt:'2025-01-01'},
+    {id:2,username:'budi',password:'budi123',fullname:'Budi Santoso',role:'user',createdAt:'2025-01-10'},
+    {id:3,username:'sari',password:'sari123',fullname:'Sari Dewi',role:'user',createdAt:'2025-01-15'},
+    {id:4,username:'tamu',password:'tamu123',fullname:'Tamu Viewer',role:'viewer',createdAt:'2025-02-01'},
+  ],
+  numbers: [
+    {id:1,name:'PT. Jaya Makmur',phone:'021-555-1234',category:'work',status:'active',ownerId:1,createdAt:'2025-03-01',note:'Kantor pusat Jakarta'},
+    {id:2,name:'Ibu Ratna (Keluarga)',phone:'0812-3344-5566',category:'personal',status:'active',ownerId:2,createdAt:'2025-03-05',note:''},
+    {id:3,name:'Warung Pak Slamet',phone:'0856-7788-9900',category:'other',status:'active',ownerId:2,createdAt:'2025-03-08',note:'Buka 07.00–21.00'},
+    {id:4,name:'Dr. Hendra Sp.PD',phone:'0811-2233-4455',category:'personal',status:'active',ownerId:3,createdAt:'2025-03-10',note:'Dokter langganan'},
+    {id:5,name:'CV. Berkah Jaya',phone:'022-444-5566',category:'work',status:'inactive',ownerId:1,createdAt:'2025-03-12',note:''},
+    {id:6,name:'Rental Mobil Om Seno',phone:'0877-6655-4433',category:'other',status:'active',ownerId:3,createdAt:'2025-03-15',note:'Lepas kunci 24 jam'},
+    {id:7,name:'Agen LPG Bu Lastri',phone:'0852-1122-3344',category:'other',status:'active',ownerId:2,createdAt:'2025-03-18',note:''},
+    {id:8,name:'Kantor Kecamatan',phone:'021-777-8899',category:'work',status:'active',ownerId:1,createdAt:'2025-03-20',note:'Jam kerja 08-16'},
+    {id:9,name:'Bengkel Motor Jaya',phone:'0821-9988-7766',category:'other',status:'active',ownerId:2,createdAt:'2025-03-22',note:'Servis rutin'},
+    {id:10,name:'Toko Bahan Bangunan',phone:'0813-5544-3322',category:'other',status:'inactive',ownerId:3,createdAt:'2025-03-25',note:'Toko Bu Mira'},
+  ],
+  nextUserId:5,
+  nextNumId:11
+};
+
+let currentUser=null, pendingDelete=null;
+
+function fillLogin(u,p){
+  document.getElementById('loginUsername').value=u;
+  document.getElementById('loginPassword').value=p;
+}
+
+function doLogin(){
+  const u=document.getElementById('loginUsername').value.trim();
+  const p=document.getElementById('loginPassword').value.trim();
+  const err=document.getElementById('loginError');
+  const found=db.users.find(x=>x.username===u&&x.password===p);
+  if(!found){err.style.display='block';document.getElementById('loginPassword').value='';return;}
+  err.style.display='none';
+  currentUser=found;
+  initApp();
+}
+
+function doLogout(){
+  currentUser=null;
+  showPage('loginPage');
+  document.getElementById('loginUsername').value='';
+  document.getElementById('loginPassword').value='';
+  showToast('Berhasil keluar. Sampai jumpa! 👋','info');
+}
+
+function initApp(){
+  showPage('appPage');
+  const av=document.getElementById('topbarAvatar');
+  av.textContent=currentUser.fullname[0].toUpperCase();
+  av.className='user-avatar avatar-'+currentUser.role;
+  document.getElementById('topbarName').textContent=currentUser.fullname;
+  const b=document.getElementById('topbarBadge');
+  b.textContent=currentUser.role.toUpperCase();
+  b.className='role-badge badge-'+currentUser.role;
+
+  const tabs=[
+    {id:'Dashboard',label:'🏠 Dashboard',roles:['admin','user','viewer']},
+    {id:'Numbers',label:'📞 Nomor',roles:['admin','user','viewer']},
+    {id:'Users',label:'👥 Users',roles:['admin']},
+  ];
+  document.getElementById('navTabs').innerHTML=tabs
+    .filter(t=>t.roles.includes(currentUser.role))
+    .map(t=>`<button class="nav-tab" id="tab${t.id}" onclick="switchPanel('${t.id}')">${t.label}</button>`)
+    .join('');
+
+  const wn={admin:'Admin 🛡️',user:currentUser.fullname.split(' ')[0]+' 👤',viewer:'Tamu 👁️'};
+  document.getElementById('welcomeText').textContent='Halo, '+wn[currentUser.role]+'!';
+  document.getElementById('welcomeSub').textContent=
+    currentUser.role==='admin'?'Anda memiliki akses penuh ke semua fitur sistem.':
+    currentUser.role==='viewer'?'Anda dapat melihat semua database nomor.':
+    'Kelola nomor kontak Anda dengan mudah dan cepat.';
+
+  const isViewer=currentUser.role==='viewer';
+  document.getElementById('addNumBtnPanel').style.display=isViewer?'none':'';
+
+  switchPanel('Dashboard');
+}
+
+function switchPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel'+id).classList.add('active');
+  const tab=document.getElementById('tab'+id);
+  if(tab)tab.classList.add('active');
+  if(id==='Dashboard')renderDashboard();
+  if(id==='Numbers')renderNumbersPanel();
+  if(id==='Users')renderUsers();
+}
+
+function renderDashboard(){
+  const mine=currentUser.role==='admin'?db.numbers:db.numbers.filter(n=>n.ownerId===currentUser.id);
+  document.getElementById('statsGrid').innerHTML=currentUser.role==='admin'?`
+    <div class="stat-card"><div class="stat-icon purple">📞</div><div class="stat-info"><h3>${db.numbers.length}</h3><p>Total Nomor</p></div></div>
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><h3>${db.numbers.filter(n=>n.status==='active').length}</h3><p>Nomor Aktif</p></div></div>
+    <div class="stat-card"><div class="stat-icon blue">👥</div><div class="stat-info"><h3>${db.users.length}</h3><p>Total User</p></div></div>
+    <div class="stat-card"><div class="stat-icon orange">💼</div><div class="stat-info"><h3>${db.numbers.filter(n=>n.category==='work').length}</h3><p>Nomor Kerja</p></div></div>
+  `:`
+    <div class="stat-card"><div class="stat-icon purple">📞</div><div class="stat-info"><h3>${mine.length}</h3><p>Nomor Saya</p></div></div>
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><h3>${mine.filter(n=>n.status==='active').length}</h3><p>Nomor Aktif</p></div></div>
+    <div class="stat-card"><div class="stat-icon blue">💼</div><div class="stat-info"><h3>${mine.filter(n=>n.category==='work').length}</h3><p>Nomor Kerja</p></div></div>
+    <div class="stat-card"><div class="stat-icon orange">👤</div><div class="stat-info"><h3>${mine.filter(n=>n.category==='personal').length}</h3><p>Personal</p></div></div>
+  `;
+
+  const qa=document.getElementById('quickAddSection');
+  if(currentUser.role!=='viewer'){
+    qa.innerHTML=`
+      <div class="add-number-form">
+        <h3>➕ Tambah Nomor Cepat</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nama Kontak *</label>
+            <input type="text" id="qaName" placeholder="Nama kontak...">
+          </div>
+          <div class="form-group">
+            <label>Nomor Telepon *</label>
+            <input type="tel" id="qaPhone" placeholder="08xxxxxxxxxx...">
+          </div>
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="qaCat">
+              <option value="personal">👤 Personal</option>
+              <option value="work">💼 Pekerjaan</option>
+              <option value="other">📌 Lainnya</option>
+            </select>
+          </div>
+          <div>
+            <button class="btn btn-success" onclick="quickAdd()" style="width:100%;height:43px">➕ Tambah</button>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    qa.innerHTML=`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;font-size:14px;color:#92400e">👁️ <strong>Mode Viewer:</strong> Anda hanya dapat melihat database nomor, tidak dapat menambah atau menghapus.</div>`;
+  }
+
+  document.getElementById('recentTitle').textContent=currentUser.role==='admin'?'Semua Nomor':'Nomor Saya';
+  renderDashNumbers();
+}
+
+function renderDashNumbers(){
+  const q=(document.getElementById('dashSearch').value||'').toLowerCase();
+  const src=currentUser.role==='admin'?db.numbers:db.numbers.filter(n=>n.ownerId===currentUser.id);
+  const f=src.filter(n=>n.name.toLowerCase().includes(q)||n.phone.includes(q)||(n.note||'').toLowerCase().includes(q));
+  const el=document.getElementById('dashNumberTable');
+  const isViewer=currentUser.role==='viewer';
+  if(!f.length){el.innerHTML=`<tr><td colspan="7"><div class="no-data"><div class="nd-icon">📭</div><p>Tidak ada nomor ditemukan</p></div></td></tr>`;return;}
+  el.innerHTML=f.map((n,i)=>{
+    const canAct=!isViewer&&(currentUser.role==='admin'||n.ownerId===currentUser.id);
+    return`<tr>
+      <td style="color:var(--gray-400);font-size:12px">${i+1}</td>
+      <td><strong>${esc(n.name)}</strong>${n.note?`<br><small style="color:var(--gray-400)">${esc(n.note)}</small>`:''}</td>
+      <td><span class="phone-num">${esc(n.phone)}</span></td>
+      <td>${catBadge(n.category)}</td>
+      <td><span class="badge badge-${n.status}">${n.status==='active'?'✅ Aktif':'⭕ Nonaktif'}</span></td>
+      <td style="font-size:12px;color:var(--gray-400)">${n.createdAt}</td>
+      <td>${canAct?`<div style="display:flex;gap:5px">
+        <button class="btn btn-xs btn-primary" onclick="openEditModal(${n.id})">✏️</button>
+        <button class="btn btn-xs btn-danger" onclick="confirmDelete('number',${n.id})">🗑️</button>
+      </div>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderNumbersPanel(){
+  const q=(document.getElementById('numSearch').value||'').toLowerCase();
+  const src=currentUser.role==='admin'?db.numbers:db.numbers.filter(n=>n.ownerId===currentUser.id);
+  const f=src.filter(n=>n.name.toLowerCase().includes(q)||n.phone.includes(q)||(n.note||'').toLowerCase().includes(q));
+  const el=document.getElementById('numberTable');
+  const isViewer=currentUser.role==='viewer';
+  if(!f.length){el.innerHTML=`<tr><td colspan="8"><div class="no-data"><div class="nd-icon">📭</div><p>Tidak ada nomor ditemukan</p></div></td></tr>`;return;}
+  el.innerHTML=f.map((n,i)=>{
+    const owner=db.users.find(u=>u.id===n.ownerId);
+    const canAct=!isViewer&&(currentUser.role==='admin'||n.ownerId===currentUser.id);
+    return`<tr>
+      <td style="color:var(--gray-400);font-size:12px">${i+1}</td>
+      <td><strong>${esc(n.name)}</strong>${n.note?`<br><small style="color:var(--gray-400)">${esc(n.note)}</small>`:''}</td>
+      <td><span class="phone-num">${esc(n.phone)}</span></td>
+      <td>${catBadge(n.category)}</td>
+      <td><span class="badge badge-${n.status}">${n.status==='active'?'✅ Aktif':'⭕ Nonaktif'}</span></td>
+      <td style="font-size:13px;color:var(--gray-500)">${owner?esc(owner.fullname):'-'}</td>
+      <td style="font-size:12px;color:var(--gray-400)">${n.createdAt}</td>
+      <td>${canAct?`<div style="display:flex;gap:5px">
+        <button class="btn btn-xs btn-primary" onclick="openEditModal(${n.id})">✏️ Edit</button>
+        <button class="btn btn-xs btn-danger" onclick="confirmDelete('number',${n.id})">🗑️ Hapus</button>
+      </div>`:`<span style="font-size:12px;color:var(--gray-400)">—</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderUsers(){
+  const q=(document.getElementById('userSearch').value||'').toLowerCase();
+  const f=db.users.filter(u=>u.username.toLowerCase().includes(q)||u.fullname.toLowerCase().includes(q));
+  const el=document.getElementById('userList');
+  if(!f.length){el.innerHTML=`<div class="no-data"><div class="nd-icon">👤</div><p>Tidak ada user ditemukan</p></div>`;return;}
+  el.innerHTML=f.map(u=>{
+    const cnt=db.numbers.filter(n=>n.ownerId===u.id).length;
+    const isSelf=u.id===currentUser.id;
+    return`<div class="user-item">
+      <div class="ua avatar-${u.role}">${u.fullname[0].toUpperCase()}</div>
+      <div class="ui-info">
+        <div class="uname">${esc(u.fullname)} ${isSelf?'<span style="font-size:11px;background:#eef2ff;color:var(--primary);padding:2px 8px;border-radius:20px">Anda</span>':''}</div>
+        <div class="umeta">@${esc(u.username)} · ${cnt} nomor tersimpan · Bergabung ${u.createdAt}</div>
+      </div>
+      <span class="badge badge-${u.role}">${u.role.toUpperCase()}</span>
+      <div class="ui-actions">
+        ${!isSelf?`<button class="btn btn-xs btn-danger" onclick="confirmDelete('user',${u.id})">🗑️ Hapus</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function quickAdd(){
+  const name=document.getElementById('qaName').value.trim();
+  const phone=document.getElementById('qaPhone').value.trim();
+  const cat=document.getElementById('qaCat').value;
+  if(!name){showToast('Nama kontak wajib diisi!','error');return;}
+  if(!phone){showToast('Nomor telepon wajib diisi!','error');return;}
+  db.numbers.unshift({id:db.nextNumId++,name,phone,category:cat,status:'active',ownerId:currentUser.id,createdAt:today(),note:''});
+  document.getElementById('qaName').value='';
+  document.getElementById('qaPhone').value='';
+  showToast('✅ Nomor "'+name+'" berhasil ditambahkan!','success');
+  renderDashboard();
+}
+
+function openAddModal(){
+  document.getElementById('addNumModalTitle').textContent='➕ Tambah Nomor Baru';
+  document.getElementById('editNumId').value='';
+  ['formName','formPhone','formNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('formCategory').value='personal';
+  document.getElementById('formStatus').value='active';
+  openModal('addNumModal');
+}
+
+function openEditModal(id){
+  const n=db.numbers.find(x=>x.id===id);if(!n)return;
+  document.getElementById('addNumModalTitle').textContent='✏️ Edit Nomor';
+  document.getElementById('editNumId').value=id;
+  document.getElementById('formName').value=n.name;
+  document.getElementById('formPhone').value=n.phone;
+  document.getElementById('formCategory').value=n.category;
+  document.getElementById('formStatus').value=n.status;
+  document.getElementById('formNote').value=n.note||'';
+  openModal('addNumModal');
+}
+
+function saveNumber(){
+  const id=document.getElementById('editNumId').value;
+  const name=document.getElementById('formName').value.trim();
+  const phone=document.getElementById('formPhone').value.trim();
+  const cat=document.getElementById('formCategory').value;
+  const stat=document.getElementById('formStatus').value;
+  const note=document.getElementById('formNote').value.trim();
+  if(!name){showToast('Nama kontak wajib diisi!','error');return;}
+  if(!phone){showToast('Nomor telepon wajib diisi!','error');return;}
+  if(id){
+    const idx=db.numbers.findIndex(n=>n.id==id);
+    if(idx!==-1)Object.assign(db.numbers[idx],{name,phone,category:cat,status:stat,note});
+    showToast('✅ Nomor "'+name+'" berhasil diperbarui!','success');
+  } else {
+    db.numbers.unshift({id:db.nextNumId++,name,phone,category:cat,status:stat,ownerId:currentUser.id,createdAt:today(),note});
+    showToast('✅ Nomor "'+name+'" berhasil ditambahkan!','success');
+  }
+  closeModal('addNumModal');
+  renderDashNumbers();
+  renderNumbersPanel();
+}
+
+function openAddUserModal(){
+  ['newUserFullname','newUserUsername','newUserPassword'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('newUserRole').value='user';
+  openModal('addUserModal');
+}
+
+function saveUser(){
+  const fn=document.getElementById('newUserFullname').value.trim();
+  const un=document.getElementById('newUserUsername').value.trim().toLowerCase().replace(/\s/g,'');
+  const pw=document.getElementById('newUserPassword').value;
+  const role=document.getElementById('newUserRole').value;
+  if(!fn){showToast('Nama lengkap wajib diisi!','error');return;}
+  if(!un){showToast('Username wajib diisi!','error');return;}
+  if(!pw||pw.length<4){showToast('Password minimal 4 karakter!','error');return;}
+  if(db.users.find(u=>u.username===un)){showToast('Username "'+un+'" sudah digunakan!','error');return;}
+  db.users.push({id:db.nextUserId++,username:un,password:pw,fullname:fn,role,createdAt:today()});
+  closeModal('addUserModal');
+  showToast('✅ User "'+fn+'" berhasil ditambahkan!','success');
+  renderUsers();
+  renderDashboard();
+}
+
+function confirmDelete(type,id){
+  pendingDelete={type,id};
+  const isNum=type==='number';
+  const item=isNum?db.numbers.find(n=>n.id===id):db.users.find(u=>u.id===id);
+  if(!item)return;
+  document.getElementById('confirmIcon').textContent=isNum?'🗑️':'👤';
+  document.getElementById('confirmTitle').textContent=isNum?'Hapus Nomor?':'Hapus User?';
+  document.getElementById('confirmMsg').textContent=isNum
+    ?`Hapus "${item.name}" (${item.phone})? Data akan hilang permanen.`
+    ?`Hapus user "@${item.username}"? Semua nomor miliknya juga akan dihapus.`
+    :`Hapus user "@${item.username}"? Semua nomor miliknya juga akan dihapus.`
+    :`Hapus user "@${item.username}"? Semua nomor miliknya juga akan dihapus.`;
+  if(isNum)document.getElementById('confirmMsg').textContent=`Hapus nomor "${item.name}" (${item.phone})? Data akan hilang permanen.`;
+  else document.getElementById('confirmMsg').textContent=`Hapus user "@${item.username}"? Semua nomor miliknya juga akan ikut terhapus.`;
+  document.getElementById('confirmOkBtn').onclick=executeDelete;
+  openModal('confirmModal');
+}
+
+function executeDelete(){
+  if(!pendingDelete)return;
+  const{type,id}=pendingDelete;
+  if(type==='number'){
+    db.numbers=db.numbers.filter(n=>n.id!==id);
+    showToast('🗑️ Nomor berhasil dihapus!','success');
+    renderDashNumbers();renderNumbersPanel();renderDashboard();
+  } else {
+    db.numbers=db.numbers.filter(n=>n.ownerId!==id);
+    db.users=db.users.filter(u=>u.id!==id);
+    showToast('🗑️ User berhasil dihapus!','success');
+    renderUsers();renderDashboard();
+  }
+  pendingDelete=null;
+  closeModal('confirmModal');
+}
+
+function catBadge(c){
+  return{personal:'<span class="badge badge-personal">👤 Personal</span>',work:'<span class="badge badge-work">💼 Kerja</span>',other:'<span class="badge badge-other">📌 Lainnya</span>'}[c]||c;
+}
+
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function today(){
+  return new Date().toISOString().split('T')[0];
+}
+
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showToast(msg,type='info'){
+  const tc=document.getElementById('toastContainer');
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  t.textContent=msg;
+  tc.appendChild(t);
+  setTimeout(()=>{t.style.cssText+='opacity:0;transform:translateX(80px);transition:.3s';setTimeout(()=>t.remove(),300);},3000);
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('loginPage').classList.contains('active'))doLogin();
+});
+</script>
+</body>
+</html>
