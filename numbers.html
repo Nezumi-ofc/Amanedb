@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phantom Core — Numbers</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Numbers page specifics ───────────────────── */
+
+    /* Inline count chip */
+    .count-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 99px;
+      font-size: 11px; font-family: var(--font-mono); font-weight: 600;
+      background: var(--blue-dim); color: var(--blue);
+      border: 1px solid var(--border-accent);
+    }
+
+    /* Phone icon badge */
+    .row-index {
+      font-size: 10px; color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    /* Info row: shown when list is loading */
+    .skeleton-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .skeleton-box {
+      background: var(--card-hover);
+      border-radius: 5px;
+      animation: shimmer 1.4s infinite;
+    }
+
+    @keyframes shimmer {
+      0%,100% { opacity: 0.4; }
+      50%      { opacity: 0.8; }
+    }
+
+    /* Form section header */
+    .form-section {
+      font-size: 11px; font-weight: 700;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 14px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 7px;
+    }
+
+    .form-section i { color: var(--blue); }
+  </style>
+</head>
+<body>
+<div id="toast-wrap"></div>
+<div id="page-overlay"></div>
+
+<div class="app-layout">
+
+  <!-- ── Sidebar ────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark"><i class="fas fa-ghost"></i></div>
+      <div>
+        <div class="brand-name">Phantom Core</div>
+        <div class="brand-ver">v2.0.4</div>
+      </div>
+    </div>
+
+    <div class="sidebar-session">
+      <div class="session-user">
+        <div class="session-avatar" id="session-avatar"></div>
+        <div>
+          <div class="session-name" id="session-name">Loading...</div>
+          <div id="session-badge" class="session-badge">—</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Main</div>
+
+      <a class="nav-link" data-page="dashboard" href="dashboard.html">
+        <i class="fas fa-chart-pie"></i> Overview
+      </a>
+
+      <a class="nav-link" data-page="numbers" href="numbers.html">
+        <i class="fas fa-mobile-alt"></i> Numbers
+        <span class="nav-pill" id="nav-num-count">—</span>
+      </a>
+
+      <a class="nav-link owner-only" data-page="users" href="users.html" style="display:none">
+        <i class="fas fa-users-cog"></i> Users
+      </a>
+
+      <div class="nav-label" style="margin-top:14px">Links</div>
+
+      <a class="nav-link" href="https://wa.me/6289529161314" target="_blank">
+        <i class="fab fa-whatsapp"></i> Support
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main Content ──────────────────────────── -->
+  <div class="main-content">
+
+    <header class="page-header">
+      <button class="sidebar-toggle" id="sidebar-toggle">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div>
+        <span class="page-title">Numbers</span>
+        <span class="page-sub">/ Registry Management</span>
+      </div>
+      <div class="header-right">
+        <span class="count-chip" id="header-count">
+          <i class="fas fa-database"></i> <span id="header-count-val">—</span>
+        </span>
+        <button class="btn btn-ghost btn-sm" id="refresh-btn">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
+    </header>
+
+    <div class="page-body">
+
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-list-btn" onclick="switchTab('list')">
+          <i class="fas fa-list-ul"></i> Registry
+        </button>
+        <button class="tab-btn" id="tab-add-btn" onclick="switchTab('add')">
+          <i class="fas fa-plus-circle"></i> Add Number
+        </button>
+        <button class="tab-btn owner-only" id="tab-del-btn" onclick="switchTab('del')" style="display:none">
+          <i class="fas fa-trash-alt"></i> Remove Number
+        </button>
+      </div>
+
+      <!-- ── TAB: LIST ──────────────────────────── -->
+      <div class="tab-pane active" id="pane-list">
+        <div class="content-card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fas fa-satellite-dish"></i>
+              Authorized Numbers
+            </div>
+            <div class="card-actions">
+              <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Search numbers...">
+              </div>
+            </div>
+          </div>
+
+          <div class="data-list" id="numbers-list">
+            <div class="loading-state"><span class="spin"></span>&nbsp; Loading registry...</div>
+          </div>
+
+          <div class="card-footer" style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono)" id="list-footer-info">—</div>
+            <div style="font-size:11px;color:var(--text-dim)" id="list-filtered-info"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: ADD ───────────────────────────── -->
+      <div class="tab-pane" id="pane-add">
+        <div class="two-col" style="align-items:start">
+
+          <!-- Form -->
+          <div class="content-card">
+            <div class="card-header">
+              <div class="card-title"><i class="fas fa-plus-circle"></i> Add New Number</div>
+            </div>
+            <div class="card-body">
+              <div class="form-section"><i class="fas fa-info-circle"></i> Number Details</div>
+
+              <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <div class="input-icon">
+                  <i class="fas fa-mobile-alt"></i>
+                  <input class="form-control mono" id="add-input"
+                    placeholder="e.g. 628123456789 or 08123456789">
+                </div>
+                <div class="form-hint">
+                  <i class="fas fa-info-circle"></i>
+                  Format: <code style="font-family:var(--font-mono);color:var(--blue)">628...</code> or
+                  <code style="font-family:var(--font-mono);color:var(--blue)">08...</code> (auto-converted)
+                </div>
+              </div>
+
+              <button class="btn btn-success btn-block btn-lg" id="add-btn" style="margin-top:6px">
+                <i class="fas fa-plus"></i> Add to Registry
+              </button>
+            </div>
+          </div>
+
+          <!-- Guide card -->
+          <div class="content-card">
+            <div class="card-header">
+              <div class="card-title"><i class="fas fa-question-circle"></i> Guide</div>
+            </div>
+            <div class="card-body" style="font-size:13px;color:var(--text-muted);line-height:1.8">
+              <p style="margin-bottom:12px">Numbers added here will be authorized to access the system.</p>
+
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;gap:8px;align-items:flex-start">
+                  <div style="width:22px;height:22px;background:var(--green-dim);color:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:1px">1</div>
+                  <div>Enter the phone number in any supported format</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:flex-start">
+                  <div style="width:22px;height:22px;background:var(--green-dim);color:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:1px">2</div>
+                  <div>Numbers starting with <code style="font-family:var(--font-mono);color:var(--blue)">0</code> will be auto-converted to <code style="font-family:var(--font-mono);color:var(--blue)">62</code> prefix</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:flex-start">
+                  <div style="width:22px;height:22px;background:var(--green-dim);color:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:1px">3</div>
+                  <div>Click <b>Add to Registry</b> — changes sync to GitHub instantly</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── TAB: DELETE (owner only) ──────────── -->
+      <div class="tab-pane" id="pane-del">
+        <div class="two-col" style="align-items:start">
+
+          <div class="content-card">
+            <div class="card-header">
+              <div class="card-title" style="color:var(--red)">
+                <i class="fas fa-trash-alt"></i> Remove Number
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-error" style="margin-bottom:16px">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>This action will permanently remove the number from the registry.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Phone Number to Remove</label>
+                <div class="input-icon">
+                  <i class="fas fa-mobile-alt"></i>
+                  <input class="form-control mono" id="del-input"
+                    placeholder="e.g. 628123456789">
+                </div>
+              </div>
+
+              <button class="btn btn-danger btn-block btn-lg" id="del-btn" style="margin-top:6px">
+                <i class="fas fa-trash-alt"></i> Remove from Registry
+              </button>
+            </div>
+          </div>
+
+          <!-- Info card -->
+          <div class="content-card">
+            <div class="card-header">
+              <div class="card-title"><i class="fas fa-shield-alt"></i> Access Required</div>
+            </div>
+            <div class="card-body" style="font-size:13px;color:var(--text-muted);line-height:1.8">
+              <p>Removing a number will immediately revoke its access to the system.</p>
+              <p style="margin-top:10px">Only Root Admin can perform this action. All changes are logged and synced to GitHub.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<script src="script.js"></script>
+<script>
+  const role = requireAuth();
+  if (!role) throw new Error("Unauthorized");
+
+  initSidebar("numbers");
+
+  const owner   = isOwner();
+  let allNumbers = [];
+
+  /* ── Tab switching ──────────────────────────────── */
+  function switchTab(name) {
+    document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById(`pane-${name}`).classList.add("active");
+    document.getElementById(`tab-${name}-btn`).classList.add("active");
+  }
+
+  // Open add tab if URL param
+  if (new URLSearchParams(location.search).get("action") === "add") {
+    setTimeout(() => switchTab("add"), 0);
+  }
+
+  /* ── Load numbers ───────────────────────────────── */
+  async function loadNumbers() {
+    const listEl = document.getElementById("numbers-list");
+    listEl.innerHTML = `<div class="loading-state"><span class="spin"></span>&nbsp; Fetching registry...</div>`;
+
+    try {
+      const d    = await ghGet(REPO_NUMBERS, FILE_NUMBERS, TOKEN_1);
+      allNumbers = JSON.parse(atob(d.content)).authorized_numbers || [];
+      updateCountUI();
+      renderList(allNumbers);
+      showToast("Registry loaded", "success");
+    } catch (e) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-plug"></i>
+          <div class="empty-state-title">Connection failed</div>
+          <div class="empty-state-desc">Could not reach GitHub database</div>
+        </div>`;
+      showToast("Failed to load registry", "error");
+    }
+  }
+
+  function updateCountUI() {
+    document.getElementById("header-count-val").textContent    = allNumbers.length;
+    document.getElementById("nav-num-count").textContent       = allNumbers.length;
+    document.getElementById("list-footer-info").textContent    = `${allNumbers.length} total entries`;
+  }
+
+  function renderList(arr) {
+    const listEl = document.getElementById("numbers-list");
+
+    if (!arr.length) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-inbox"></i>
+          <div class="empty-state-title">No numbers found</div>
+          <div class="empty-state-desc">Add a number using the "Add Number" tab</div>
+        </div>`;
+      return;
+    }
+
+    listEl.innerHTML = arr.map((n, i) => `
+      <div class="data-row">
+        <div class="row-left">
+          <div class="row-icon" style="background:var(--blue-dim);color:var(--blue)">
+            <i class="fas fa-mobile-alt"></i>
+          </div>
+          <div>
+            <div class="row-primary">${n}</div>
+            <div class="row-secondary">
+              Entry #${String(allNumbers.indexOf(n) + 1).padStart(3,'0')}
+            </div>
+          </div>
+        </div>
+        <div class="row-right">
+          <span class="badge badge-green"><span class="dot dot-green"></span> Active</span>
+          ${owner ? `<button class="btn btn-danger btn-sm" onclick="deleteInline('${n}')">
+            <i class="fas fa-times"></i>
+          </button>` : `<span style="font-size:10px;color:var(--text-dim)">Read only</span>`}
+        </div>
+      </div>`).join('');
+  }
+
+  /* ── Search ─────────────────────────────────────── */
+  document.getElementById("search-input").addEventListener("input", function () {
+    const q   = this.value.trim().toLowerCase();
+    const filtered = q ? allNumbers.filter(n => n.includes(q)) : allNumbers;
+    renderList(filtered);
+    const info = document.getElementById("list-filtered-info");
+    info.textContent = q ? `${filtered.length} of ${allNumbers.length} results` : "";
+  });
+
+  /* ── Refresh ────────────────────────────────────── */
+  document.getElementById("refresh-btn").onclick = async () => {
+    const btn = document.getElementById("refresh-btn");
+    btnLoading(btn, true);
+    await loadNumbers();
+    btnLoading(btn, false, '<i class="fas fa-sync-alt"></i> Refresh');
+  };
+
+  /* ── Save helper ────────────────────────────────── */
+  async function saveNumbers(newArr) {
+    const d = await ghGet(REPO_NUMBERS, FILE_NUMBERS, TOKEN_1);
+    await ghPut(REPO_NUMBERS, FILE_NUMBERS, TOKEN_1, { authorized_numbers: newArr }, d.sha);
+    allNumbers = newArr;
+    updateCountUI();
+    renderList(allNumbers);
+    showToast("Registry synchronized", "success");
+  }
+
+  /* ── Add Number ─────────────────────────────────── */
+  document.getElementById("add-btn").onclick = async () => {
+    const btn   = document.getElementById("add-btn");
+    let   val   = document.getElementById("add-input").value.trim();
+
+    if (!val) return showToast("Please enter a phone number", "error");
+
+    val = normalizeNumber(val);
+    if (allNumbers.includes(val)) return showToast("Number already exists in registry", "error");
+
+    btnLoading(btn, true);
+
+    try {
+      const newArr = [...allNumbers, val];
+      await saveNumbers(newArr);
+      document.getElementById("add-input").value = "";
+      switchTab("list");
+      document.querySelector("#tab-list-btn").click();
+    } catch (e) {
+      showToast("Failed to save changes", "error");
+    }
+
+    btnLoading(btn, false, '<i class="fas fa-plus"></i> Add to Registry');
+  };
+
+  /* ── Delete Number (form) ───────────────────────── */
+  document.getElementById("del-btn").onclick = async () => {
+    const btn = document.getElementById("del-btn");
+    let   val = document.getElementById("del-input").value.trim();
+
+    if (!val) return showToast("Please enter a phone number", "error");
+
+    val = normalizeNumber(val);
+    const idx = allNumbers.indexOf(val);
+    if (idx === -1) return showToast("Number not found in registry", "error");
+
+    if (!confirm(`Remove ${val} from registry?`)) return;
+
+    btnLoading(btn, true);
+    try {
+      const newArr = allNumbers.filter(n => n !== val);
+      await saveNumbers(newArr);
+      document.getElementById("del-input").value = "";
+    } catch (e) {
+      showToast("Failed to save changes", "error");
+    }
+    btnLoading(btn, false, '<i class="fas fa-trash-alt"></i> Remove from Registry');
+  };
+
+  /* ── Inline delete (from list row) ─────────────── */
+  window.deleteInline = async (n) => {
+    if (!confirm(`Remove ${n} from registry?`)) return;
+    try {
+      const newArr = allNumbers.filter(num => num !== n);
+      await saveNumbers(newArr);
+    } catch (e) {
+      showToast("Failed to save changes", "error");
+    }
+  };
+
+  /* ── Init ───────────────────────────────────────── */
+  loadNumbers();
+</script>
+</body>
+</html>
